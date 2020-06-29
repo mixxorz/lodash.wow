@@ -1,0 +1,10 @@
+## Interface: 80300
+## Title: lodash.wow
+## Author: mixxorz
+## Version: @project-version@
+
+#@no-lib-strip@
+libs\LibStub\LibStub.lua
+#@end-no-lib-strip@
+
+lodash.lua

@@ -2,33 +2,33 @@
 -- lodash for lua
 -- @module lodash
 -- @author Daniel Moghimi (daniel.mogimi@gmail.com)
+-- @author Mitchel Cabuloy (WoW version) (mitchel.cabuloy@gmail.com)
 -- @license MIT
 
-local _ = {
-    _VERSION = '0.02'
-}
+local MAJOR, MINOR = "lodash.wow", 1
+local lodash = LibStub:NewLibrary(MAJOR, MINOR)
 
-if type(table.pack) ~= 'function' then
-   function table.pack(...)
-     return { n = select("#", ...), ... }
-   end
+if not lodash then return end -- No Upgrade needed.
+
+local _ = lodash
+
+local function tpack(...)
+  return { n = select("#", ...), ... }
 end
 
-if type(table.unpack) ~= 'function' then
-   table.unpack = unpack
-end
+local tunpack = unpack
 
 --- Array
 -- @section Array
 
 ---
--- Creates an array of elements split into groups the length of size. 
--- If collection can’t be split evenly, the final chunk will be the 
+-- Creates an array of elements split into groups the length of size.
+-- If collection can’t be split evenly, the final chunk will be the
 -- remaining elements.
 -- @usage local t = _.chunk({'x', 'y', 'z', 1, 2, 3, 4, true , false}, 4)
 -- _.print(t)
 -- --> {{"x", "y", "z", 1}, {2, 3, 4, true}, {false}}
--- 
+--
 -- @param array The array to process.
 -- @param[opt=1] size The length of each chunk.
 -- @return the new array containing chunks.
@@ -36,7 +36,7 @@ _.chunk = function (array, size)
     local t = {}
     local size = size == 0 and 1 or size or 1
     local c, i = 1, 1
-    while true do   
+    while true do
         t[i] = {}
         for j = 1, size do
             _.push(t[i], array[c])
@@ -69,6 +69,9 @@ _.compact = function (array)
     return t
 end
 
+local differenceInner = function()
+end
+
 
 ---
 -- Creates an array of unique array values not included in the other 
@@ -80,19 +83,29 @@ end
 -- @param ... The arrays of values to exclude.
 -- @return Returns the new array of filtered values.
 _.difference = function (array, ...)
+    local shouldBreak = false
     local t = {}
     local c = 1
     local tmp = _.table(...)
     for k, v in ipairs(array) do
         while not _.isNil(tmp[c]) do
             for j, v2 in ipairs(tmp[c]) do
-                if v == v2 then goto doubleBreak end
+                if v == v2 then
+                  shouldBreak = true
+                  break
+                end
+            end
+            if shouldBreak then
+              break
             end
             c = c + 1
         end
-        _.push(t, v)
-        ::doubleBreak::
+        if not shouldBreak then
+          _.push(t, v)
+        end
         c = 1
+
+        shouldBreak = false
     end
     return t
 end
@@ -140,18 +153,18 @@ local dropWhile = function(array, predicate, selfArg, start, step, right)
     local t = {}
     local c = start
     while not _.isNil(array[c]) do
-        ::cont::
-        if #t == 0 and 
-            callIteratee(predicate, selfArg, array[c], c, array) then
-            c = c + step
-            goto cont
-        end
+        repeat
+          if #t == 0 and callIteratee(predicate, selfArg, array[c], c, array) then
+              c = c + step
+              do break end
+          end
+        until true
         if right then
             _.enqueue(t, array[c])
         else
             _.push(t, array[c])
         end
-        c = c + step            
+        c = c + step
     end 
     return t
 end
@@ -407,17 +420,21 @@ end
 -- @param ... The values to remove.
 -- @return Returns array
 _.pull = function(array, ...)
+    local shouldBreak = false
     local i = 1
     while not _.isNil(array[i]) do
         for k, v in ipairs(_.table(...)) do
             if array[i] == v then 
                 table.remove(array, i)
-                goto cont
+                shouldBreak = true
+                break
             end
         end
-        i = i + 1
-        ::cont::
-    end 
+        if not shouldBreak then
+          i = i + 1
+        end
+        shouldBreak = false
+    end
     return array
 end
 
@@ -473,10 +490,9 @@ _.remove = function(array, predicate)
     while not _.isNil(array[c]) do
         if predicate(array[c], c, array) then
             _.push(t, table.remove(array, c))
-            goto cont
-        end        
-        c = c + 1
-        ::cont::
+        else
+          c = c + 1
+        end
     end 
     return t
 end
@@ -1506,8 +1522,8 @@ end
 -- @param value value to cast
 -- @return Returns arguments
 _.args = function (value)
-    if _.isTable(value) then return table.unpack(value) 
-    else return table.unpack({value})
+    if _.isTable(value) then return tunpack(value)
+    else return tunpack({value})
     end
 end
 
@@ -1737,7 +1753,7 @@ _.func = function (...)
 end
 
 ---
--- Cast parameters to table using table.pack
+-- Cast parameters to table using tpack
 -- @usage print(_.table(1, 2, 3))
 -- --> {1, 2, 3}
 -- print(_.table("123"))
@@ -1749,7 +1765,7 @@ end
 -- @param ... The parameters to pass to any detected function
 -- @return casted value
 _.table = function (...)
-    return table.pack(...)
+    return tpack(...)
 end
 
 ---
@@ -1922,9 +1938,9 @@ end
 -- @param ... The source objects
 -- @return Returns object
 _.assign = function(object, ...)
-  for index = 1, select('#', ...) do
-    for k, v in pairs(select(index, ...)) do
-      object[k] = v
+  for _, source in ipairs(...) do
+    for key, value in pairs(source) do
+      object[key] = value
     end
   end
 
@@ -2288,6 +2304,3 @@ _.range = function(start, ...)
     end
     return t
 end
-
-return _
-
