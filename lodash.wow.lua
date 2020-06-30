@@ -12,6 +12,7 @@ if not lodash then return end -- No Upgrade needed.
 
 local _ = lodash
 
+local strsub, strlen = strsub, strlen
 local function tpack(...)
   return { n = select("#", ...), ... }
 end
@@ -1151,7 +1152,7 @@ _.sample = function (collection, n)
     local n = n or 1
     local t = {}
     local keys = _.keys(collection)
-    for i=1, n do        
+    for i=1, n do
         local pick = keys[_.random(1, #keys)]
         _.push(t, _.get(collection, {pick}))
     end
@@ -1938,14 +1939,32 @@ end
 -- @param ... The source objects
 -- @return Returns object
 _.assign = function(object, ...)
-  for _, source in ipairs(...) do
+  local vararg = {...}
+  for i, source in ipairs(vararg) do
     for key, value in pairs(source) do
       object[key] = value
     end
   end
-
   return object
 end
+
+
+local baseGet = function (object, path)
+  local index = 1
+  local length = #path
+
+  while object ~= nil and index < length + 1 do
+    object = object[path[index]]
+    index = index + 1
+  end
+
+  if index == length + 1 then
+    return object
+  end
+
+  return nil
+end
+
 
 ---
 -- Gets the property value at path of object. If the resolved value 
@@ -1958,21 +1977,21 @@ end
 -- @param path The path of the property to get.
 -- @param[opt=nil] defaultValue The value returned if the resolved value is nil.
 -- @return Returns the resolved value.
-_.get = function (object, path, defaultValue)
-    if _.isTable(object) then
-        local value = object
-        local c = 1
-        while not _.isNil(path[c]) do
-            if not _.isTable(value) then return defaultValue end
-            value = value[path[c]]    
-            c = c + 1
-        end
-        return value or defaultValue
-    elseif _.isString(object) then
-        local index = path[1]
-        return object:sub(index, index)
-    end
+_.get = function (object, path, defaulValue)
+  local result
+  if object == nil then
+    result = nil
+  else
+    result = baseGet(object, path)
+  end
+
+  if result == nil then
+    return defaulValue
+  end
+
+  return result
 end
+
 
 ---
 -- Checks if path is a direct property.
@@ -1994,7 +2013,7 @@ _.has = function (object, path)
         end
         c = c + 1
     end
-    return exist   
+    return exist
 end
 
 ---
@@ -2173,6 +2192,36 @@ end
 
 --- String
 -- @section String
+
+---
+-- Converts the first character of string to upper case.
+-- @usage _.upperFirst('fred')
+-- --> 'Fred'
+--
+-- @param str The string to convert. (string)
+-- @return Returns the converted string.
+_.firstToUpper = function (str)
+    return (str:gsub("^%l", string.upper))
+end
+
+
+---
+-- Checks if string starts with the given target string.
+-- @usage _.startsWith('abc', 'a');
+-- --> true
+-- _.startsWith('abc', 'b');
+-- --> false
+-- _.startsWith('abc', 'b', 1);
+-- --> true
+--
+-- @param str The string to inspect. (string)
+-- @param target The string to search for. (string)
+-- @param position The position to search from. (integer)
+-- @return Returns the converted string.
+_.startsWith = function(str, target, position)
+  position = position or 1
+  return strsub(str, position, position + strlen(target) - 1) == target
+end
 
 
 --- Utility

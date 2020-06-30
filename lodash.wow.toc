@@ -7,4 +7,4 @@
 libs\LibStub\LibStub.lua
 #@end-no-lib-strip@
 
-lodash.lua
+lodash.wow.lua
